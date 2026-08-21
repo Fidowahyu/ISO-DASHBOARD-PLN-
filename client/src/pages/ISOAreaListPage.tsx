@@ -12,14 +12,7 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
   Tooltip,
-  CartesianGrid,
-  Cell,
-  ReferenceLine,
 } from 'recharts';
 
 const AREA_ICONS: Record<number, string> = {
@@ -41,7 +34,6 @@ export function ISOAreaListPage() {
   const [areas, setAreas] = useState<Array<{ id: string; areaNumber: number; name: string; _count: { metrics: number } }>>([]);
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'radar' | 'bar'>('radar');
 
   useEffect(() => {
     Promise.all([getAreas(), getDashboardSummary()])
@@ -103,87 +95,80 @@ export function ISOAreaListPage() {
         </div>
       )}
 
-      {/* Visual Charts Card for All 12 Areas */}
-      <Card className="border-slate-800 bg-slate-950 shadow-xl">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-800/80 pb-4">
-          <div>
-            <CardTitle className="text-base font-bold text-white flex items-center gap-2">
-              📊 Visualisasi Radar & Grafik Kematangan 12 Area ISO 30414
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-400">
-              Perbandingan skor kualitas aktual per area terhadap ambang batas kelayakan audit ISO (Level 3.0 / 65.0%).
-            </CardDescription>
-          </div>
-          <div className="flex rounded-lg border border-slate-800 bg-slate-900 p-1">
-            <button
-              type="button"
-              onClick={() => setActiveTab('radar')}
-              className={`rounded px-3 py-1 text-xs font-semibold transition-all ${
-                activeTab === 'radar' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              🕸️ Radar Spider Chart
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('bar')}
-              className={`rounded px-3 py-1 text-xs font-semibold transition-all ${
-                activeTab === 'bar' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              📊 Bar Comparison
-            </button>
+      {/* Visual Spider Chart Card for All 12 Areas */}
+      <Card className="border-slate-800 bg-slate-950 shadow-2xl">
+        <CardHeader className="border-b border-slate-800/80 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-bold text-white flex items-center gap-2">
+                🕸️ Spider Web Radar Chart Kematangan 12 Area ISO 30414
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-400 mt-1">
+                Diagram jaring laba-laba 360° perbandingan skor kematangan aktual seluruh 12 area modal manusia terhadap target minimal kelayakan audit ISO (Level 3.0 / 65.0%).
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="border-indigo-500/50 bg-indigo-500/10 text-indigo-300 text-[11px]">
+                🟣 Skor Kematangan Aktual
+              </Badge>
+              <Badge variant="outline" className="border-emerald-500/50 bg-emerald-500/10 text-emerald-300 text-[11px]">
+                🟢 Baseline ISO 65%
+              </Badge>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="p-5">
-          <div className="h-[360px] w-full">
+        <CardContent className="p-6">
+          <div className="h-[440px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              {activeTab === 'radar' ? (
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
-                  <PolarGrid stroke="#334155" />
-                  <PolarAngleAxis dataKey="shortName" tick={{ fill: '#cbd5e1', fontSize: 11, fontWeight: 600 }} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 10 }} />
-                  <Radar
-                    name="Skor Kematangan Area (%)"
-                    dataKey="score"
-                    stroke="#6366f1"
-                    fill="#6366f1"
-                    fillOpacity={0.4}
-                  />
-                  <Radar
-                    name="Target Baseline Minimal (65%)"
-                    dataKey="target"
-                    stroke="#10b981"
-                    fill="#10b981"
-                    fillOpacity={0.1}
-                    strokeDasharray="4 4"
-                  />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
-                    formatter={(value: any, name: any) => [`${value}%`, name]}
-                  />
-                </RadarChart>
-              ) : (
-                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="shortName" tick={{ fill: '#cbd5e1', fontSize: 11 }} angle={-35} textAnchor="end" interval={0} />
-                  <YAxis domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} unit="%" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
-                    formatter={(value: any) => [`${value}% Score`, 'Kematangan']}
-                    labelFormatter={(label, items) => {
-                      const item = items[0]?.payload;
-                      return item ? `${item.shortName}: ${item.name}` : label;
-                    }}
-                  />
-                  <ReferenceLine y={65.0} stroke="#10b981" strokeDasharray="4 4" label={{ value: 'Target 65%', fill: '#10b981', fontSize: 11, position: 'right' }} />
-                  <Bar dataKey="score" radius={[6, 6, 0, 0]}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.score < 65.0 ? '#f59e0b' : '#10b981'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              )}
+              <RadarChart cx="50%" cy="50%" outerRadius="78%" data={chartData}>
+                <PolarGrid stroke="#334155" strokeDasharray="3 3" />
+                <PolarAngleAxis
+                  dataKey="shortName"
+                  tick={{ fill: '#e2e8f0', fontSize: 12, fontWeight: 700 }}
+                />
+                <PolarRadiusAxis
+                  angle={90}
+                  domain={[0, 100]}
+                  tick={{ fill: '#64748b', fontSize: 10 }}
+                  stroke="#334155"
+                />
+                <Radar
+                  name="Skor Kematangan Area (%)"
+                  dataKey="score"
+                  stroke="#6366f1"
+                  strokeWidth={2.5}
+                  fill="#6366f1"
+                  fillOpacity={0.45}
+                  dot={{ r: 4, fill: '#818cf8', stroke: '#4f46e5' }}
+                />
+                <Radar
+                  name="Target Baseline Minimal ISO (65%)"
+                  dataKey="target"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  fill="#10b981"
+                  fillOpacity={0.12}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    borderColor: '#334155',
+                    borderRadius: '10px',
+                    color: '#fff',
+                    fontSize: '12px',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                  }}
+                  formatter={(value: any, name: any) => [
+                    `${value}% (Level ${(1.0 + (value / 100) * 4.0).toFixed(1)})`,
+                    name,
+                  ]}
+                  labelFormatter={(label: any) => {
+                    const item = chartData.find(c => c.shortName === label);
+                    return item ? `${item.shortName}: ${item.name}` : label;
+                  }}
+                />
+              </RadarChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
