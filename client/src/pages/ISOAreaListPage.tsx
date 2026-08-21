@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getAreas, getDashboardSummary, type DashboardResponse } from '@/lib/api';
-import { DEFAULT_AREA_RECOMMENDATIONS } from '@/data/report-data';
+import { getAreas, getDashboardSummary, type DashboardResponse, type DashboardArea } from '@/lib/api';
+import { AREA_RECOMMENDATIONS, type AreaRecommendation } from '@/data/report-data';
 import { DynamicIcon } from '@/components/ui/icons';
 
 const AREA_ICONS: Record<number, string> = {
@@ -73,8 +73,8 @@ export function ISOAreaListPage() {
       {/* Grid 12 ISO Areas Cards */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         {areas.map((area) => {
-          const rec = DEFAULT_AREA_RECOMMENDATIONS.find(r => r.areaNumber === area.areaNumber);
-          const dashArea = dashboard?.areas?.find(a => a.name.toLowerCase().includes(area.name.toLowerCase()) || a.areaNumber === area.areaNumber);
+          const rec = AREA_RECOMMENDATIONS.find((r: AreaRecommendation) => r.areaNumber === area.areaNumber);
+          const dashArea = dashboard?.areas?.find((a: DashboardArea) => a.name.toLowerCase().includes(area.name.toLowerCase()) || a.areaNumber === area.areaNumber);
           const qualityPct = dashArea?.quality ?? dashArea?.completion ?? 65.0;
           const levelVal = Number((1.0 + (Math.max(0, Math.min(100, qualityPct)) / 100) * 4.0).toFixed(1));
           const isBelow = levelVal < 3.0;

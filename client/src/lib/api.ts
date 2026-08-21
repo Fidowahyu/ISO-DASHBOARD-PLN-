@@ -245,13 +245,27 @@ export function submitMetricSubmission(id: string) { return request<Submission>(
 export function getSubmissions(metricId?: string) { return request<Submission[]>(`/metric-submissions${metricId ? `?metricId=${encodeURIComponent(metricId)}` : ''}`); }
 export function getSubmission(id: string) { return request<Submission>(`/metric-submissions/${id}`); }
 
+export interface DashboardArea {
+  id: string;
+  areaNumber: number;
+  name: string;
+  nameEn: string;
+  totalMetrics: number;
+  completedMetrics: number;
+  completionPercentage: number | null;
+  completion?: number | null;
+  quality?: number | null;
+  statusCounts: { approved: number; pending: number; attention: number };
+  metrics?: Array<{ id: string; name: string; status: string; result: number | null; pic: string }>;
+}
+
 export interface DashboardResponse {
   period: ReportingPeriod | null;
   empty: boolean;
   message?: string;
   kpis?: { totalMetrics: number; completed: number; pending: number; approved: number; needsAttention: number; completion: number | null };
   statusCounts?: { approved: number; submitted: number; underReview: number; rejected: number; needsRevision: number; draft: number };
-  areas: Array<{ id: string; areaNumber: number; name: string; nameEn: string; totalMetrics: number; completedMetrics: number; completionPercentage: number | null; statusCounts: { approved: number; pending: number; attention: number }; metrics?: Array<{ id: string; name: string; status: string; result: number | null; pic: string }> }>;
+  areas: DashboardArea[];
   quality?: { overall: number | null; completeness: number | null; accuracy: number | null; consistency: number | null; timeliness: number | null; explanations: Record<string, string> };
   issues?: Array<{ metricId: string; metric: string; areaId: string; area: string; status: string; message: string }>;
   activities?: Array<{ id: string; metric: string; area: string; status: string; updatedAt: string }>;
@@ -261,6 +275,7 @@ export function getDashboard(filters: { year?: number; period?: string; isoAreaI
   const params = new URLSearchParams(); Object.entries(filters).forEach(([key, value]) => { if (value !== undefined && value !== '') params.set(key, String(value)); });
   return request<DashboardResponse>(`/dashboard/summary${params.size ? `?${params.toString()}` : ''}`);
 }
+export const getDashboardSummary = getDashboard;
 export function getDashboardTrends(filters: { period?: string; isoAreaId?: string } = {}) { const params = new URLSearchParams(); Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value); }); return request<Array<{ period: string; year: number; completion: number | null }>>(`/dashboard/trends?${params.toString()}`); }
 export function getDivisions() { return request<Array<{ id: string; code: string; name: string }>>('/divisions'); }
 export function getAreaDashboard(id: string, year?: number) { return request<DashboardResponse>(`/iso-areas/${id}/dashboard${year ? `?year=${year}` : ''}`); }

@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getAreaDashboard, type DashboardResponse } from '@/lib/api';
-import { DEFAULT_AREA_RECOMMENDATIONS } from '@/data/report-data';
+import { AREA_RECOMMENDATIONS, type AreaRecommendation } from '@/data/report-data';
 
 export function ISOAreaDetailPage() {
   const { slug: id = '' } = useParams();
@@ -51,8 +51,8 @@ export function ISOAreaDetailPage() {
   const areaLevel = Number((1.0 + (Math.max(0, Math.min(100, qualityScore)) / 100) * 4.0).toFixed(1));
   const isBelow = areaLevel < 3.0;
 
-  const rec = DEFAULT_AREA_RECOMMENDATIONS.find(
-    r => r.areaNumber === area.areaNumber || r.areaName.toLowerCase().includes(area.name.toLowerCase()) || area.name.toLowerCase().includes(r.areaName.toLowerCase())
+  const rec = AREA_RECOMMENDATIONS.find(
+    (r: AreaRecommendation) => r.areaNumber === area.areaNumber || r.areaName.toLowerCase().includes(area.name.toLowerCase()) || area.name.toLowerCase().includes(r.areaName.toLowerCase())
   );
 
   const scopeText = rec?.scope || `Fokus Pengukuran & Metrik Tata Kelola ${area.name}`;
