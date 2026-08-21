@@ -522,41 +522,84 @@ export async function generatePdf(snapshot: ReportSnapshot) {
 export async function generateExcel(snapshot: ReportSnapshot) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'ISO 30414 Executive Advisory Engine';
+  workbook.company = 'PT PLN (Persero) - Human Capital Management';
 
   const overallScore = snapshot.quality.overall ?? snapshot.completion ?? 50.0;
   const overallLevel = Number((1.0 + (Math.max(0, Math.min(100, overallScore)) / 100) * 4.0).toFixed(1));
+  const minTargetLevel = 3.0;
+  const gapLevel = Number((overallLevel - minTargetLevel).toFixed(1));
 
-  // 1. Sheet Executive Summary
+  const overallGrade = overallScore >= 90 ? 'Grade A (Unggul / World Class)'
+    : overallScore >= 75 ? 'Grade B (Tinggi / Terintegrasi)'
+    : overallScore >= 60 ? 'Grade C (Memenuhi Standar Minimal ISO)'
+    : overallScore >= 40 ? 'Grade D (Terbatas / Di Bawah Standar)'
+    : 'Grade F (Kritis / High Risk Audit)';
+
+  // ─── 1. Sheet Executive Summary ──────────────────────────────────────────
   const summary = workbook.addWorksheet('Executive Summary');
-  summary.addRows([
-    ['LAPORAN HASIL PENILAIAN AUDIT ISO 30414 (EXECUTIVE ADVISORY)'],
-    ['Tahun Pelaporan', snapshot.period.year],
-    ['Periode Audit', snapshot.period.label],
-    ['Hasil Penilaian Overall', `LEVEL ${overallLevel} / 5.0 (${overallScore.toFixed(1)}%)`],
-    ['Batas Minimum Standarisasi', 'LEVEL 3.0 / 5.0 (65.0%) - STANDARD BASELINE TARGET'],
-    ['Total Metrik Evaluasi', snapshot.totalMetrics],
-    ['Metrik Terisi / Approved', snapshot.approvedMetrics],
-    ['Persentase Keterisian Data', snapshot.completion == null ? '52.4%' : `${snapshot.completion}%`],
-    ['Skor Kualitas Data (Overall)', snapshot.quality.overall == null ? `${overallScore}%` : `${snapshot.quality.overall}%`],
-  ]);
+  summary.views = [{ showGridLines: true }];
 
-  // 2. Sheet Maturity Level Criteria (1-5)
+  summary.mergeCells('A1:E1');
+  const titleCell = summary.getCell('A1');
+  titleCell.value = 'LAPORAN HASIL PENILAIAN AUDIT ISO 30414 (EXECUTIVE AUDIT SUMMARY)';
+  titleCell.font = { name: 'Arial', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
+  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+  titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  summary.getRow(1).height = 36;
+
+  summary.addRow(['Parameter Audit', 'Nilai / Hasil Evaluation', 'Target Baseline ISO 30414', 'Status Evaluasi', 'Catatan Consultant Advisory']);
+  const hRow = summary.getRow(2);
+  hRow.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+  hRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+  hRow.height = 24;
+
+  const kpiData = [
+    ['Hasil Penilaian Overall', `LEVEL ${overallLevel} / 5.0 (${overallScore.toFixed(1)}%)`, 'LEVEL 3.0 / 5.0 (65.0%)', overallGrade, `Tingkat kematangan tata kelola SDM berada di Level ${overallLevel} / 5.0.`],
+    ['Defisit Kematangan (Gap)', `${gapLevel >= 0 ? `+${gapLevel}` : gapLevel} Level`, 'Level 0.0 (Zero Deficit)', gapLevel >= 0 ? 'MEMENUHI TARGET' : 'DEFISIT TINGGI', gapLevel >= 0 ? 'Kematangan memenuhi standar kelayakan audit.' : 'Perlu intervensi perbaikan tata kelola data.'],
+    ['Persentase Keterisian Data', `${snapshot.completion ?? 52.4}%`, '>= 80.0% Terisi', (snapshot.completion ?? 0) >= 80 ? 'EXCELLENT' : 'MODERATE RISK', `${snapshot.approvedMetrics} dari ${snapshot.totalMetrics} metrik telah terisi dan terverifikasi.`],
+    ['Total Area Terakreditasi', `${snapshot.areas.length} Area Tata Kelola`, '12 Area Standar', 'TERAKREDITASI', 'Seluruh pilar area terakreditasi dalam ruang lingkup audit.'],
+    ['Tanggal Penerbitan Laporan', new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), 'Rutin Tahunan', 'FINAL APPROVED', 'Dokumen laporan resmi hasil evaluasi audit ISO 30414.'],
+  ];
+
+  kpiData.forEach(rowVals => summary.addRow(rowVals));
+
+  for (let r = 3; r <= 7; r++) {
+    const row = summary.getRow(r);
+    row.height = 22;
+    row.font = { name: 'Arial', size: 9.5 };
+    const isEven = r % 2 === 0;
+    row.eachCell((cell, colNum) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isEven ? 'FFF8FAFC' : 'FFFFFFFF' } };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+      };
+      if (colNum === 2 || colNum === 4) cell.font = { name: 'Arial', size: 9.5, bold: true };
+    });
+  }
+
+  // ─── 2. Sheet Maturity Scale (1-5) ───────────────────────────────────────
   const critSheet = workbook.addWorksheet('Level Criteria 1-5');
+  critSheet.views = [{ showGridLines: true }];
   critSheet.addRow(['Level', 'Nama Kriteria Level', 'Rentang Skor', 'Status Kepatuhan Audit', 'Deskripsi Standar Kriteria']);
   MATURITY_LEVEL_CRITERIA.forEach((c) => {
     critSheet.addRow([`Level ${c.level}.0`, c.title, c.range, c.status, c.desc]);
   });
 
-  // 3. Sheet Audit Findings Summary
+  // ─── 3. Sheet Audit Findings Summary ─────────────────────────────────────
   const findSheet = workbook.addWorksheet('Temuan Audit Utama');
+  findSheet.views = [{ showGridLines: true }];
   findSheet.addRow(['No Temuan', 'Judul Temuan Audit', 'Tingkat Risiko', 'Deskripsi Temuan Data']);
   findSheet.addRow(['1', 'Gaps Keterisian Data Metrik Audited', 'MODERATE AUDIT RISK', `Keterisian data saat ini ${snapshot.completion}% (${snapshot.approvedMetrics}/${snapshot.totalMetrics} metrik).`]);
   findSheet.addRow(['2', 'Defisit Kematangan Performa Area Kritis', 'HIGH AUDIT RISK', `Area dengan skor di bawah Level 3.0 membutuhkan perhatian prioritas.`]);
   findSheet.addRow(['3', 'Risiko Validasi Akurasi & Automation Data', 'MEDIUM AUDIT RISK', `Kebutuhan otomatisasi formula & sinkronisasi Core HRIS.`]);
   findSheet.addRow(['4', 'Kepatuhan Standar Kategori Pelaporan Publik', 'COMPLIANCE OBSERVATION', `Kebutuhan persetujuan resmi eksekutif untuk pengungkapan publik.`]);
 
-  // 4. Sheet Area Descriptions Catalog
+  // ─── 4. Sheet Area Descriptions Catalog ─────────────────────────────────
   const descSheet = workbook.addWorksheet('Area Descriptions');
+  descSheet.views = [{ showGridLines: true }];
   descSheet.addRow(['No Area', 'Nama Area ISO 30414', 'Fokus & Ruang Lingkup Pengukuran', 'Deskripsi Standar Pilar']);
   snapshot.areas.forEach((area, idx) => {
     const cat = AREA_DESCRIPTIONS_CATALOG.find(c => c.name.toLowerCase().includes(area.name.toLowerCase()) || c.no === idx + 1);
@@ -565,14 +608,15 @@ export async function generateExcel(snapshot: ReportSnapshot) {
     descSheet.addRow([idx + 1, area.name, scope, desc]);
   });
 
-  // 5. Sheet ISO Areas Breakdown & Recommendations
-  const areas = workbook.addWorksheet('Area Conclusions & Actions');
-  areas.addRow(['ISO Area', 'Total Metrik', 'Metrik Terisi', 'Completion (%)', 'Quality Score (%)', 'Maturity Level', 'Status Baseline Target', 'Temuan Audit Utama', 'Kesimpulan Audit', 'Rekomendasi Tindakan']);
+  // ─── 5. Sheet ISO Areas Breakdown & Recommendations ──────────────────────
+  const areasSheet = workbook.addWorksheet('Area Conclusions & Actions');
+  areasSheet.views = [{ showGridLines: true }];
+  areasSheet.addRow(['ISO Area', 'Total Metrik', 'Metrik Terisi', 'Completion (%)', 'Quality Score (%)', 'Maturity Level', 'Status Baseline Target', 'Temuan Audit Utama', 'Kesimpulan Audit', 'Rekomendasi Tindakan']);
   snapshot.areas.forEach(area => {
     const areaPct = area.quality ?? area.completion ?? 50.0;
     const lvl = Number((1.0 + (Math.max(0, Math.min(100, areaPct)) / 100) * 4.0).toFixed(1));
     const isBelow = lvl < 3.0;
-    areas.addRow([
+    areasSheet.addRow([
       area.name,
       area.totalMetrics,
       area.approvedMetrics,
@@ -586,18 +630,47 @@ export async function generateExcel(snapshot: ReportSnapshot) {
     ]);
   });
 
-  // 6. Sheet Metrics Details
-  const metrics = workbook.addWorksheet('Metrics Details');
-  metrics.addRow(['ISO Area', 'Metric Name', 'Reporting Period', 'Result (%)', 'Data Type', 'PIC', 'Division', 'Status', 'Approved By', 'Approved Date']);
-  snapshot.metrics.forEach(metric => metrics.addRow([metric.area, metric.name, snapshot.period.label, metric.result != null ? `${metric.result}%` : 'Belum Terisi', metric.dataType, metric.pic, metric.division, metric.status, metric.approvedBy, metric.approvedDate]));
+  // ─── 6. Sheet Metrics Details ─────────────────────────────────────────────
+  const metricsSheet = workbook.addWorksheet('Metrics Details');
+  metricsSheet.views = [{ showGridLines: true }];
+  metricsSheet.addRow(['ISO Area', 'Metric Name', 'Reporting Period', 'Result (%)', 'Data Type', 'PIC', 'Division', 'Status', 'Approved By', 'Approved Date']);
+  snapshot.metrics.forEach(metric => metricsSheet.addRow([metric.area, metric.name, snapshot.period.label, metric.result != null ? `${metric.result}%` : 'Belum Terisi', metric.dataType, metric.pic, metric.division, metric.status, metric.approvedBy, metric.approvedDate]));
 
-  // Format all sheets with header fill
+  // Format all sheets with executive header & zebra striping
   workbook.worksheets.forEach(sheet => {
     sheet.freezePanes = { row: 2 };
-    sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+    const headerRow = sheet.getRow(1);
+    headerRow.height = 26;
+    headerRow.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'left' };
+
+    for (let r = 2; r <= sheet.rowCount; r++) {
+      if (sheet.name === 'Executive Summary' && r === 1) continue;
+      const row = sheet.getRow(r);
+      row.height = 20;
+      const isEven = r % 2 === 0;
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        cell.font = cell.font || { name: 'Arial', size: 9 };
+        if (!cell.fill || (cell.fill as ExcelJS.FillPattern).fgColor?.argb !== 'FF0F172A') {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isEven ? 'FFF8FAFC' : 'FFFFFFFF' } };
+        }
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        };
+      });
+    }
+
     sheet.columns.forEach(column => {
-      column.width = Math.min(Math.max((column.header?.toString().length ?? 12) + 5, 15), 55);
+      let maxLen = 12;
+      column.eachCell?.({ includeEmpty: false }, cell => {
+        const len = cell.value ? String(cell.value).length : 0;
+        if (len > maxLen) maxLen = len;
+      });
+      column.width = Math.min(Math.max(maxLen + 4, 14), 58);
     });
   });
 
