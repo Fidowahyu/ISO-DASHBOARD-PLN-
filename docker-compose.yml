@@ -1,0 +1,52 @@
+# ISO 30414 — Development Docker Compose
+# Usage: docker compose up
+#
+# This starts the API + PostgreSQL only.
+# Frontend runs via: cd client && npm run dev
+
+services:
+  # ─── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: iso30414
+      POSTGRES_PASSWORD: devpassword_change_me
+      POSTGRES_DB: iso30414
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"   # Exposed for local dev tools (TablePlus, etc.)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iso30414"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── API ─────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://iso30414:devpassword_change_me@postgres:5432/iso30414?schema=public
+      JWT_SECRET: dev-jwt-secret-change-me-in-production
+      JWT_EXPIRES_IN: 8h
+      APP_URL: http://localhost:5173
+      MAX_FILE_SIZE_MB: 10
+      STORAGE_PATH: ./storage
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - api_storage:/app/storage
+
+volumes:
+  pgdata:
+  api_storage:

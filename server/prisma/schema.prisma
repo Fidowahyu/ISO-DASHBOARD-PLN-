@@ -1,0 +1,512 @@
+// ISO 30414 Human Capital Reporting — Database Schema
+// PostgreSQL via Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Authentication & Users ───
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  role         Role     @default(PIC)
+  divisionId   String?  @map("division_id")
+  isActive     Boolean  @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  metricPICs   MetricPIC[]
+  metricValues MetricValue[]
+  reviews      Review[]
+  auditLogs    AuditLog[]
+  importJobs   ImportJob[]
+  reports      Report[]
+  submissionVersions SubmissionVersion[]
+  reviewComments ReviewComment[]
+  notifications Notification[]
+  reportConfigurations ReportConfiguration[]
+  division     Division? @relation(fields: [divisionId], references: [id])
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  PIC
+  REVIEWER
+  MANAGEMENT
+}
+
+// ─── Security ───
+
+model LoginAttempt {
+  id        String   @id @default(uuid())
+  email     String
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+  @@map("login_attempts")
+}
+
+// ─── Organization ───
+
+model Division {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  users      User[]
+  metricPICs MetricPIC[]
+
+  @@map("divisions")
+}
+
+// ─── ISO 30414 Structure ───
+
+model ISOArea {
+  id            String   @id @default(uuid())
+  areaNumber    Int      @unique @map("area_number")
+  name          String
+  nameEn        String   @map("name_en")
+  description   String?
+  descriptionEn String?  @map("description_en")
+  isActive      Boolean  @default(true) @map("is_active")
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  metrics           Metric[]
+  dataQualityScores DataQualityScore[]
+
+  @@map("iso_areas")
+}
+
+model Metric {
+  id                 String         @id @default(uuid())
+  isoAreaId          String         @map("iso_area_id")
+  metricNumber       Int            @map("metric_number")
+  name               String
+  metricType         MetricType     @map("metric_type")
+  isoComparison      String?        @map("iso_comparison")   // "Sudah ada" | "Baru" | etc.
+  formulaDescription String?        @map("formula_description") @db.Text
+  status             MetricStatus   @default(Active)
+  movedToNote        String?        @map("moved_to_note")
+  sortOrder          Int            @default(0) @map("sort_order")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  isoArea       ISOArea           @relation(fields: [isoAreaId], references: [id])
+  attributes    MetricAttribute[]
+  formulas      MetricFormula[]
+  validationRules MetricValidationRule[]
+  pics          MetricPIC[]
+  metricValues  MetricValue[]
+
+  @@unique([isoAreaId, metricNumber])
+  @@map("metrics")
+}
+
+enum MetricType {
+  Required
+  Recommended
+  NA @map("N/A")
+}
+
+enum MetricStatus {
+  Active
+  Inactive
+  Moved
+}
+
+model MetricAttribute {
+  id           String   @id @default(uuid())
+  metricId     String   @map("metric_id")
+  name         String
+  dataType     DataType @map("data_type")
+  exampleValue String?  @map("example_value")
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  sortOrder    Int      @default(0) @map("sort_order")
+  validationRules Json?  @map("validation_rules")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  metric      Metric                @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  listOptions AttributeListOption[]
+
+  @@map("metric_attributes")
+}
+
+enum DataType {
+  Text
+  Number
+  Integer
+  Decimal
+  Currency
+  List
+  MultiSelect
+  Date
+  Year
+  Boolean
+  Percentage
+}
+
+model MetricFormula {
+  id           String   @id @default(uuid())
+  metricId     String   @map("metric_id")
+  formula      String   @db.Text
+  version      Int      @default(1)
+  effectiveFrom DateTime @default(now()) @map("effective_from")
+  effectiveTo  DateTime? @map("effective_to")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  metric Metric @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@unique([metricId, version])
+  @@map("metric_formulas")
+}
+
+model MetricValidationRule {
+  id            String   @id @default(uuid())
+  metricId      String   @map("metric_id")
+  ruleType      String   @map("rule_type")
+  ruleValue     Json?    @map("rule_value")
+  errorMessage  String?  @map("error_message")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  metric Metric @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@index([metricId])
+  @@map("metric_validation_rules")
+}
+
+model AttributeListOption {
+  id                String @id @default(uuid())
+  metricAttributeId String @map("metric_attribute_id")
+  value             String
+  sortOrder         Int    @default(0) @map("sort_order")
+
+  metricAttribute MetricAttribute @relation(fields: [metricAttributeId], references: [id], onDelete: Cascade)
+
+  @@map("attribute_list_options")
+}
+
+// ─── PIC Assignments ───
+
+model MetricPIC {
+  id            String   @id @default(uuid())
+  metricId      String   @map("metric_id")
+  divisionId    String?  @map("division_id")
+  userId        String?  @map("user_id")
+  picName       String   @map("pic_name")     // Original name from Excel
+  picYear       String   @map("pic_year")     // "2024" | "2026"
+  isCoordinator Boolean  @default(false) @map("is_coordinator")
+  assignedAt    DateTime @default(now()) @map("assigned_at")
+
+  metric   Metric    @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  division Division? @relation(fields: [divisionId], references: [id])
+  user     User?     @relation(fields: [userId], references: [id])
+
+  @@map("metric_pics")
+}
+
+// ─── Reporting ───
+
+model ReportingPeriod {
+  id         String       @id @default(uuid())
+  year       Int
+  periodType PeriodType   @map("period_type")
+  label      String       // e.g., "2026 Annual"
+  startDate  DateTime     @map("start_date")
+  endDate    DateTime     @map("end_date")
+  status     PeriodStatus @default(Open)
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  metricValues      MetricValue[]
+  reports           Report[]
+  dataQualityScores DataQualityScore[]
+
+  @@unique([year, periodType])
+  @@map("reporting_periods")
+}
+
+enum PeriodType {
+  Annual
+  SemiAnnual  @map("Semi-Annual")
+  Quarterly
+}
+
+enum PeriodStatus {
+  Open
+  Closed
+  Locked
+}
+
+// ─── Data Values ───
+
+model MetricValue {
+  id                String         @id @default(uuid())
+  metricId          String         @map("metric_id")
+  reportingPeriodId String         @map("reporting_period_id")
+  submittedById     String?        @map("submitted_by_id")
+  status            ValueStatus    @default(Draft)
+  attributeValues   Json           @map("attribute_values")    // { attributeId: value }
+  calculatedResult  Decimal?       @map("calculated_result")
+  formulaVersion    String?        @map("formula_version")
+  notes             String?        @db.Text
+  submittedAt       DateTime?      @map("submitted_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  metric          Metric          @relation(fields: [metricId], references: [id])
+  reportingPeriod ReportingPeriod @relation(fields: [reportingPeriodId], references: [id])
+  submittedBy     User?           @relation(fields: [submittedById], references: [id])
+  reviews         Review[]
+  versions        SubmissionVersion[]
+  reviewComments  ReviewComment[]
+
+  @@unique([metricId, reportingPeriodId])
+  @@index([reportingPeriodId, status])
+  @@index([metricId, status])
+  @@map("metric_values")
+}
+
+enum ValueStatus {
+  Draft
+  Submitted
+  UnderReview
+  Approved
+  Rejected
+  NeedsRevision
+}
+
+// ─── Review Workflow ───
+
+model Review {
+  id            String      @id @default(uuid())
+  metricValueId String      @map("metric_value_id")
+  reviewerId    String      @map("reviewer_id")
+  action        ReviewAction
+  statusFrom    String      @map("status_from")
+  statusTo      String      @map("status_to")
+  comment       String?     @db.Text
+  reviewedAt    DateTime    @default(now()) @map("reviewed_at")
+
+  metricValue MetricValue @relation(fields: [metricValueId], references: [id], onDelete: Cascade)
+  reviewer    User        @relation(fields: [reviewerId], references: [id])
+
+  @@map("reviews")
+}
+
+enum ReviewAction {
+  Submit
+  StartReview
+  Approve
+  Reject
+  RequestRevision
+}
+
+// ─── Audit Trail ───
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  entityType  String   @map("entity_type")    // "MetricValue", "Metric", etc.
+  entityId    String?  @map("entity_id")
+  action      String                          // "Create", "Update", "Delete", etc.
+  oldValues   Json?    @map("old_values")
+  newValues   Json?    @map("new_values")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  metadata    Json?
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model SubmissionVersion {
+  id                String      @id @default(uuid())
+  metricValueId     String      @map("metric_value_id")
+  version           Int
+  status            ValueStatus
+  attributeValues   Json        @map("attribute_values")
+  calculatedResult  Decimal?     @map("calculated_result")
+  formulaVersion    String?      @map("formula_version")
+  createdById       String?      @map("created_by_id")
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  metricValue MetricValue @relation(fields: [metricValueId], references: [id], onDelete: Restrict)
+  createdBy   User?       @relation(fields: [createdById], references: [id])
+
+  @@unique([metricValueId, version])
+  @@index([metricValueId, createdAt])
+  @@map("submission_versions")
+}
+
+model ReviewComment {
+  id            String   @id @default(uuid())
+  metricValueId String   @map("metric_value_id")
+  authorId      String   @map("author_id")
+  comment       String   @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  metricValue MetricValue @relation(fields: [metricValueId], references: [id], onDelete: Restrict)
+  author      User        @relation(fields: [authorId], references: [id])
+
+  @@index([metricValueId, createdAt])
+  @@map("review_comments")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  message   String    @db.Text
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}
+
+// ─── Import ───
+
+model ImportJob {
+  id                String       @id @default(uuid())
+  userId            String?      @map("user_id")
+  filename          String
+  fileSize          Int?         @map("file_size")
+  sheetCount        Int?         @map("sheet_count")
+  versionNumber     Int?         @map("version_number")
+  status            ImportStatus @default(Pending)
+  totalAreas        Int?         @map("total_areas")
+  totalMetrics      Int?         @map("total_metrics")
+  totalPicRecords   Int?         @map("total_pic_records")
+  validationResults Json?        @map("validation_results")
+  importSummary     Json?        @map("import_summary")
+  previewData       Json?        @map("preview_data")
+  uploadedAt        DateTime     @default(now()) @map("uploaded_at")
+  completedAt       DateTime?    @map("completed_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("import_jobs")
+}
+
+enum ImportStatus {
+  Pending
+  Validating
+  Preview
+  Confirmed
+  Failed
+  Completed
+}
+
+// ─── Reports ───
+
+model Report {
+  id                String   @id @default(uuid())
+  name              String
+  generatedById     String?  @map("generated_by_id")
+  reportingPeriodId String   @map("reporting_period_id")
+  version           Int      @default(1)
+  status            ReportStatus @default(Generated)
+  reportType        String   @map("report_type")     // "ISO_Full", "ISO_Area", "Executive_Summary"
+  format            String                           // "PDF", "Excel"
+  filePath          String?  @map("file_path")
+  fileSize          Int?     @map("file_size")
+  checksum          String?
+  filters           Json?
+  reportData        Json?    @map("report_data")
+  generatedAt       DateTime @default(now()) @map("generated_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  generatedBy     User?           @relation(fields: [generatedById], references: [id])
+  reportingPeriod ReportingPeriod @relation(fields: [reportingPeriodId], references: [id])
+  files           ReportFile[]
+
+  @@index([reportingPeriodId, createdAt])
+  @@map("reports")
+}
+
+enum ReportStatus {
+  Preview
+  Generated
+  Failed
+}
+
+model ReportFile {
+  id        String   @id @default(uuid())
+  reportId  String   @map("report_id")
+  format    String
+  filePath  String   @map("file_path")
+  fileSize  Int      @map("file_size")
+  checksum  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, format])
+  @@map("report_files")
+}
+
+model ReportConfiguration {
+  id                 String   @id @default(uuid())
+  name               String
+  description        String?
+  defaultSections    Json     @map("default_sections")
+  includeCharts      Boolean  @default(true) @map("include_charts")
+  includeMetricDetails Boolean @default(true) @map("include_metric_details")
+  includePIC         Boolean  @default(true) @map("include_pic")
+  includeFormula     Boolean  @default(false) @map("include_formula")
+  createdById        String?  @map("created_by_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  createdBy User? @relation(fields: [createdById], references: [id])
+
+  @@map("report_configurations")
+}
+
+// ─── Data Quality ───
+
+model DataQualityScore {
+  id                String   @id @default(uuid())
+  isoAreaId         String?  @map("iso_area_id")       // null = overall score
+  reportingPeriodId String   @map("reporting_period_id")
+  overallScore      Decimal  @map("overall_score")
+  completenessScore Decimal  @map("completeness_score")
+  accuracyScore     Decimal  @map("accuracy_score")
+  consistencyScore  Decimal  @map("consistency_score")
+  timelinessScore   Decimal  @map("timeliness_score")
+  details           Json?
+  calculatedAt      DateTime @default(now()) @map("calculated_at")
+
+  isoArea         ISOArea?        @relation(fields: [isoAreaId], references: [id])
+  reportingPeriod ReportingPeriod @relation(fields: [reportingPeriodId], references: [id])
+
+  @@map("data_quality_scores")
+}

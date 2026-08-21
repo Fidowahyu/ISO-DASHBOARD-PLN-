@@ -1,0 +1,16 @@
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { getMetricForm, getSubmissions, type MetricConfiguration, type Submission } from '@/lib/api';
+
+export function MetricDetailPage() {
+  const { id = '' } = useParams();
+  const [configuration, setConfiguration] = useState<MetricConfiguration | null>(null);
+  const [history, setHistory] = useState<Submission[]>([]);
+  const [error, setError] = useState('');
+  useEffect(() => { Promise.all([getMetricForm(id), getSubmissions(id)]).then(([loadedConfiguration, loadedHistory]) => { setConfiguration(loadedConfiguration); setHistory(loadedHistory); }).catch(value => setError(value instanceof Error ? value.message : 'Unable to load metric detail.')); }, [id]);
+  if (error) return <p role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>;
+  if (!configuration) return <p className="text-sm text-muted-foreground">Loading metric configuration...</p>;
+  return <div className="flex flex-col gap-6"><Link to="/iso-areas" className="text-sm text-muted-foreground hover:text-foreground">← Back to ISO Areas</Link><div><p className="text-xs font-semibold uppercase tracking-wider text-primary">{configuration.metric.isoArea.name}</p><h2 className="mt-1 text-xl font-semibold">{configuration.metric.name}</h2></div><Card><CardHeader><CardTitle className="text-base">Metric configuration</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-2"><div><p className="text-xs text-muted-foreground">Type</p><p className="mt-1">{configuration.metric.metricType}</p></div><div><p className="text-xs text-muted-foreground">PIC</p><p className="mt-1">{configuration.pic.map(pic => pic.picName).join(', ') || 'Not assigned'}</p></div><div className="md:col-span-2"><p className="text-xs text-muted-foreground">Formula</p><p className="mt-1">{configuration.formula?.formula ?? 'No formula configured.'}</p></div><div className="md:col-span-2"><p className="text-xs text-muted-foreground">Attributes</p><ul className="mt-2 grid gap-2 sm:grid-cols-2">{configuration.attributes.map(attribute => <li key={attribute.id} className="rounded-md border border-border px-3 py-2">{attribute.name}<span className="ml-2 text-xs text-muted-foreground">{attribute.dataType}</span></li>)}</ul></div></CardContent></Card><Card><CardHeader><CardTitle className="text-base">History</CardTitle></CardHeader><CardContent className="space-y-3">{history.map(item => <div key={item.id} className="flex items-center justify-between border-b border-border pb-3 last:border-0"><div><p className="text-sm font-medium">{item.reportingPeriod.label}</p><p className="text-xs text-muted-foreground">{item.reportingPeriod.status}</p></div><div className="flex items-center gap-3"><span className="font-semibold tabular-nums">{item.calculatedResult == null ? 'Not calculated' : Number(item.calculatedResult).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><Badge variant="outline">{item.status}</Badge></div></div>)}{history.length === 0 && <p className="text-sm text-muted-foreground">No reporting history yet.</p>}</CardContent></Card></div>;
+}
