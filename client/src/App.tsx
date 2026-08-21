@@ -41,35 +41,45 @@ export default function App() {
             {/* ─── Protected routes (require authentication) ───────────── */}
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
-                {/* Dashboard */}
+                {/* Dashboard & Overview */}
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/system/architecture" element={<SystemArchitecturePage />} />
 
                 {/* ISO Areas */}
                 <Route path="/iso-areas" element={<ISOAreaListPage />} />
                 <Route path="/iso-areas/:slug" element={<ISOAreaDetailPage />} />
 
-                {/* Phase 2 — configuration import */}
-                <Route path="/data-management/import" element={<ExcelImportPage />} />
-                <Route path="/data/upload" element={<ExcelImportPage />} />
-                <Route path="/data-management/input" element={<DynamicMetricInputPage />} />
-                <Route path="/data-management/input/:metricId" element={<DynamicMetricInputPage />} />
-                <Route path="/data-management/drafts" element={<SubmissionListPage status="Draft" />} />
-                <Route path="/data-management/submissions" element={<SubmissionListPage />} />
-                <Route path="/data-management/submissions/:id" element={<SubmissionDetailPage />} />
-                <Route path="/data/input" element={<DynamicMetricInputPage />} />
+                {/* Data Input & Submissions (ADMIN, PIC) */}
+                <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'PIC']} />}>
+                  <Route path="/data-management/input" element={<DynamicMetricInputPage />} />
+                  <Route path="/data-management/input/:metricId" element={<DynamicMetricInputPage />} />
+                  <Route path="/data-management/drafts" element={<SubmissionListPage status="Draft" />} />
+                  <Route path="/data-management/submissions" element={<SubmissionListPage />} />
+                  <Route path="/data-management/submissions/:id" element={<SubmissionDetailPage />} />
+                  <Route path="/data/input" element={<DynamicMetricInputPage />} />
+                </Route>
+
+                {/* Excel Import & System Arch (ADMIN ONLY) */}
+                <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                  <Route path="/data-management/import" element={<ExcelImportPage />} />
+                  <Route path="/data/upload" element={<ExcelImportPage />} />
+                  <Route path="/system/architecture" element={<SystemArchitecturePage />} />
+                </Route>
+
+                {/* Data Quality & Analytics */}
                 <Route path="/data/validation" element={<DataQualityAnalyticsPage />} />
                 <Route path="/data/quality" element={<DataQualityAnalyticsPage />} />
 
-                {/* Phase 5 — review workflow */}
-                <Route path="/review" element={<ReviewQueuePage />} />
-                <Route path="/review/:submissionId" element={<ReviewSubmissionPage />} />
-                <Route path="/review/pending" element={<ReviewQueuePage />} />
-                <Route path="/review/approved" element={<PlaceholderPage />} />
-                <Route path="/review/rejected" element={<PlaceholderPage />} />
+                {/* Review Workflow (ADMIN, REVIEWER) */}
+                <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'REVIEWER']} />}>
+                  <Route path="/review" element={<ReviewQueuePage />} />
+                  <Route path="/review/:submissionId" element={<ReviewSubmissionPage />} />
+                  <Route path="/review/pending" element={<ReviewQueuePage />} />
+                  <Route path="/review/approved" element={<PlaceholderPage />} />
+                  <Route path="/review/rejected" element={<PlaceholderPage />} />
+                </Route>
 
-                {/* Phase 6 — report generator */}
+                {/* Reports & History */}
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/reports/preview" element={<ReportPreviewPage />} />
                 <Route path="/reports/history" element={<ReportHistoryPage />} />
@@ -77,17 +87,19 @@ export default function App() {
                 <Route path="/reports/excel" element={<ReportsPage />} />
                 <Route path="/reports/pdf" element={<ReportsPage />} />
 
-                {/* Administration */}
-                <Route path="/administration/pic" element={<PICManagementPage />} />
-                <Route path="/administration/pic/:id" element={<PICDetailPage />} />
-                <Route path="/administration/iso-configuration" element={<ISOConfigurationPage />} />
-                <Route path="/administration/users" element={<UserManagementPage />} />
-                <Route path="/administration/audit-log" element={<AuditLogPage />} />
-                <Route path="/administration/audit-log/:id" element={<AuditLogDetailPage />} />
-                <Route path="/admin/pic" element={<PICManagementPage />} />
-                <Route path="/admin/config" element={<ISOConfigurationPage />} />
-                <Route path="/admin/users" element={<UserManagementPage />} />
-                <Route path="/admin/audit" element={<AuditLogPage />} />
+                {/* Administration (ADMIN ONLY) */}
+                <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                  <Route path="/administration/pic" element={<PICManagementPage />} />
+                  <Route path="/administration/pic/:id" element={<PICDetailPage />} />
+                  <Route path="/administration/iso-configuration" element={<ISOConfigurationPage />} />
+                  <Route path="/administration/users" element={<UserManagementPage />} />
+                  <Route path="/administration/audit-log" element={<AuditLogPage />} />
+                  <Route path="/administration/audit-log/:id" element={<AuditLogDetailPage />} />
+                  <Route path="/admin/pic" element={<PICManagementPage />} />
+                  <Route path="/admin/config" element={<ISOConfigurationPage />} />
+                  <Route path="/admin/users" element={<UserManagementPage />} />
+                  <Route path="/admin/audit" element={<AuditLogPage />} />
+                </Route>
 
                 {/* Misc */}
                 <Route path="/submissions/:id/history" element={<SubmissionHistoryPage />} />

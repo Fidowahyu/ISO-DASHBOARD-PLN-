@@ -9,7 +9,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Overview',
     items: [
       { label: 'Dashboard', href: '/', icon: 'LayoutDashboard' },
-      { label: 'System Architecture', href: '/system/architecture', icon: 'GitBranch' },
+      { label: 'System Architecture', href: '/system/architecture', icon: 'GitBranch', roles: ['ADMIN'] },
     ],
   },
   {
@@ -32,37 +32,38 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: 'Data Management',
-    roles: ['ADMIN', 'PIC'],
+    roles: ['ADMIN', 'PIC', 'REVIEWER', 'MANAGEMENT'],
     items: [
       { label: 'Data Input', href: '/data-management/input', icon: 'PenSquare', roles: ['ADMIN', 'PIC'] },
       { label: 'Drafts', href: '/data-management/drafts', icon: 'FileText', roles: ['ADMIN', 'PIC'] },
       { label: 'Submissions', href: '/data-management/submissions', icon: 'CheckCircle', roles: ['ADMIN', 'PIC'] },
-      { label: 'Import Configuration', href: '/data-management/import', icon: 'Upload', roles: ['ADMIN', 'PIC'] },
-      { label: 'Data Validation', href: '/data/validation', icon: 'CheckSquare', roles: ['ADMIN', 'PIC'] },
-      { label: 'Data Quality', href: '/data/quality', icon: 'BarChart', roles: ['ADMIN', 'PIC'] },
+      { label: 'Import Configuration', href: '/data-management/import', icon: 'Upload', roles: ['ADMIN'] },
+      { label: 'Data Validation', href: '/data/validation', icon: 'CheckSquare', roles: ['ADMIN', 'PIC', 'REVIEWER'] },
+      { label: 'Data Quality & Analytics', href: '/data/quality', icon: 'BarChart', roles: ['ADMIN', 'PIC', 'REVIEWER', 'MANAGEMENT'] },
     ],
   },
   {
-    title: 'Review',
+    title: 'Review & Approval',
     roles: ['ADMIN', 'REVIEWER'],
     items: [
       { label: 'Review Queue', href: '/review', icon: 'Clock', roles: ['ADMIN', 'REVIEWER'] },
-      { label: 'Approved', href: '/review/approved', icon: 'CheckCircle', roles: ['ADMIN', 'REVIEWER'] },
-      { label: 'Rejected', href: '/review/rejected', icon: 'XCircle', roles: ['ADMIN', 'REVIEWER'] },
+      { label: 'Approved Submissions', href: '/review/approved', icon: 'CheckCircle', roles: ['ADMIN', 'REVIEWER'] },
+      { label: 'Rejected Submissions', href: '/review/rejected', icon: 'XCircle', roles: ['ADMIN', 'REVIEWER'] },
     ],
   },
   {
-    title: 'Reports',
+    title: 'Reports & Audit',
+    roles: ['ADMIN', 'PIC', 'REVIEWER', 'MANAGEMENT'],
     items: [
-      { label: 'Reports', href: '/reports', icon: 'FileText' },
-      { label: 'Report History', href: '/reports/history', icon: 'History' },
+      { label: 'Executive Audit Reports', href: '/reports', icon: 'FileText', roles: ['ADMIN', 'PIC', 'REVIEWER', 'MANAGEMENT'] },
+      { label: 'Report History', href: '/reports/history', icon: 'History', roles: ['ADMIN', 'PIC', 'REVIEWER', 'MANAGEMENT'] },
     ],
   },
   {
     title: 'Administration',
     roles: ['ADMIN'],
     items: [
-      { label: 'Users', href: '/administration/users', icon: 'Users', roles: ['ADMIN'] },
+      { label: 'Users Management', href: '/administration/users', icon: 'Users', roles: ['ADMIN'] },
       { label: 'PIC Management', href: '/administration/pic', icon: 'UserCog', roles: ['ADMIN'] },
       { label: 'ISO Configuration', href: '/administration/iso-configuration', icon: 'Settings', roles: ['ADMIN'] },
       { label: 'Audit Log', href: '/administration/audit-log', icon: 'History', roles: ['ADMIN'] },

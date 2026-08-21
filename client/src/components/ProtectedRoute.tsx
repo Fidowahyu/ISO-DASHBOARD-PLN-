@@ -1,12 +1,17 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import type { UserRole } from '@/types';
+
+interface ProtectedRouteProps {
+  allowedRoles?: UserRole[];
+}
 
 /**
  * Route guard: redirects unauthenticated users to /login.
- * Preserves the intended destination via ?redirect= query param.
+ * Also checks allowedRoles if provided.
  */
-export function ProtectedRoute() {
-  const { isAuthenticated, isLoading } = useAuth();
+export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
   // While session is being rehydrated, show a full-page spinner
@@ -40,6 +45,12 @@ export function ProtectedRoute() {
   if (!isAuthenticated) {
     const redirect = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/login?redirect=${redirect}`} replace />;
+  }
+
+  if (allowedRoles && allowedRoles.length > 0 && user?.role) {
+    if (!allowedRoles.includes(user.role as UserRole)) {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   return <Outlet />;
