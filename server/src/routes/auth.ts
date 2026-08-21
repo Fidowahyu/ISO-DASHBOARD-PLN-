@@ -3,15 +3,50 @@ import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { authenticate } from '../middleware/auth';
 import { loginRateLimiter } from '../middleware/rateLimiter';
-import { attemptLogin, COOKIE_NAME, COOKIE_OPTIONS } from '../services/auth-service';
+import { attemptLogin, registerUser, COOKIE_NAME, COOKIE_OPTIONS } from '../services/auth-service';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address.').max(255),
   password: z.string().min(1, 'Password is required.').max(128),
 });
 
+const registerSchema = z.object({
+  fullName: z.string().min(2, 'Nama lengkap minimal 2 karakter.').max(100),
+  email: z.string().email('Format email tidak valid.').max(255),
+  password: z.string().min(6, 'Password minimal 6 karakter.').max(128),
+  role: z.enum(['ADMIN', 'PIC', 'REVIEWER', 'MANAGEMENT']).optional(),
+  divisionId: z.string().optional(),
+});
+
 export function createAuthRouter(prisma: PrismaClient): Router {
   const router = Router();
+
+  /** POST /api/auth/register */
+  router.post('/auth/register', loginRateLimiter, async (req, res) => {
+    const parsed = registerSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: parsed.error.errors[0]?.message ?? 'Format data pendaftaran tidak valid.', requestId: req.requestId },
+      });
+      return;
+    }
+
+    try {
+      const { token, user } = await registerUser(prisma, parsed.data);
+      res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+      res.json({
+        success: true,
+        user: { id: user.id, email: user.email, role: user.role, divisionId: user.divisionId },
+      });
+    } catch (err) {
+      const e = err as Error & { status?: number };
+      res.status(e.status ?? 500).json({
+        success: false,
+        error: { code: 'REGISTER_FAILED', message: e.message, requestId: req.requestId },
+      });
+    }
+  });
 
   /** POST /api/auth/login */
   router.post('/auth/login', loginRateLimiter, async (req, res) => {

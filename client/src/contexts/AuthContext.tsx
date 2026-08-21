@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import { login as apiLogin, logout as apiLogout, setUnauthorizedHandler, type AuthUser } from '@/lib/api';
+import { login as apiLogin, register as apiRegister, logout as apiLogout, setUnauthorizedHandler, type AuthUser } from '@/lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -8,6 +8,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (data: { fullName: string; email: string; password: string; role?: string; divisionId?: string }) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -71,6 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
   }, []);
 
+  const register = useCallback(async (data: { fullName: string; email: string; password: string; role?: string; divisionId?: string }) => {
+    const { user: u } = await apiRegister(data);
+    setUser(u);
+  }, []);
+
   const logout = useCallback(async () => {
     await apiLogout();
     setUser(null);
@@ -78,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, isAuthenticated: !!user, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

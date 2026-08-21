@@ -71,4 +71,50 @@ export async function attemptLogin(
   return { token, user: authUser };
 }
 
+/**
+ * Register a new user account. Returns signed JWT token and AuthUser object on success.
+ */
+export async function registerUser(
+  prisma: PrismaClient,
+  data: {
+    fullName: string;
+    email: string;
+    password: string;
+    role?: 'ADMIN' | 'PIC' | 'REVIEWER' | 'MANAGEMENT';
+    divisionId?: string;
+  }
+): Promise<{ token: string; user: AuthUser }> {
+  const emailLower = data.email.toLowerCase().trim();
+
+  const existing = await prisma.user.findUnique({
+    where: { email: emailLower }
+  });
+
+  if (existing) {
+    throw Object.assign(new Error('Alamat email sudah terdaftar di sistem. Silakan gunakan email lain atau login.'), { status: 400 });
+  }
+
+  const passwordHash = await bcrypt.hash(data.password, 12);
+
+  const newUser = await prisma.user.create({
+    data: {
+      fullName: data.fullName.trim(),
+      email: emailLower,
+      passwordHash,
+      role: data.role ?? 'PIC',
+      divisionId: data.divisionId ?? null,
+      isActive: true,
+      lastLoginAt: new Date(),
+    },
+    select: { id: true, email: true, role: true, divisionId: true }
+  });
+
+  const authUser: AuthUser = { id: newUser.id, email: newUser.email, role: newUser.role, divisionId: newUser.divisionId };
+  const token = signToken(authUser);
+
+  logger.info('New user registered successfully', { userId: newUser.id, email: newUser.email, role: newUser.role });
+
+  return { token, user: authUser };
+}
+
 export { COOKIE_NAME, COOKIE_OPTIONS };

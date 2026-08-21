@@ -61,6 +61,22 @@ export async function login(email: string, password: string): Promise<{ user: Au
   return payload as { user: AuthUser };
 }
 
+export async function register(data: { fullName: string; email: string; password: string; role?: string; divisionId?: string }): Promise<{ user: AuthUser }> {
+  const response = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      payload?.error?.message ?? payload?.error ?? payload?.message ?? 'Pendaftaran gagal. Silakan coba lagi.'
+    );
+  }
+  return payload as { user: AuthUser };
+}
+
 export async function logout(): Promise<void> {
   await fetch(`${API_BASE}/auth/logout`, {
     method: 'POST',

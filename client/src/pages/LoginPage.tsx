@@ -3,12 +3,23 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function LoginPage() {
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, register, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+
+  // Login form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Register form state
+  const [regFullName, setRegFullName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regRole, setRegRole] = useState<'PIC' | 'REVIEWER' | 'MANAGEMENT' | 'ADMIN'>('PIC');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -25,11 +36,30 @@ export function LoginPage() {
     setError('');
     setSubmitting(true);
     try {
-      await login(email.trim(), password);
+      if (mode === 'login') {
+        await login(email.trim(), password);
+      } else {
+        if (regPassword !== regConfirmPassword) {
+          setError('Konfirmasi password tidak cocok dengan password yang dimasukkan.');
+          setSubmitting(false);
+          return;
+        }
+        if (regPassword.length < 6) {
+          setError('Password minimal harus 6 karakter.');
+          setSubmitting(false);
+          return;
+        }
+        await register({
+          fullName: regFullName.trim(),
+          email: regEmail.trim(),
+          password: regPassword,
+          role: regRole,
+        });
+      }
       const redirect = searchParams.get('redirect') ?? '/dashboard';
       navigate(redirect, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Operasi gagal. Silakan coba lagi.');
     } finally {
       setSubmitting(false);
     }
@@ -69,15 +99,47 @@ export function LoginPage() {
           </div>
           <div>
             <h1 className="login-brand__title">ISO 30414</h1>
-            <p className="login-brand__subtitle">Human Capital Reporting</p>
+            <p className="login-brand__subtitle">Human Capital Reporting Platform</p>
           </div>
         </div>
 
         {/* Card */}
         <div className="login-card">
+          {/* Mode Switcher Tabs */}
+          <div className="flex border-b border-white/10 mb-6 p-1 bg-white/5 rounded-xl">
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setError(''); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                mode === 'login'
+                  ? 'bg-indigo-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Masuk Akun (Login)
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('register'); setError(''); }}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                mode === 'register'
+                  ? 'bg-indigo-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Daftar Baru (Register)
+            </button>
+          </div>
+
           <div className="login-card__header">
-            <h2 className="login-card__heading">Sign in to your account</h2>
-            <p className="login-card__desc">Enter your credentials to access the platform</p>
+            <h2 className="login-card__heading">
+              {mode === 'login' ? 'Masuk ke Akun Anda' : 'Buat Akun Baru'}
+            </h2>
+            <p className="login-card__desc">
+              {mode === 'login'
+                ? 'Masukkan email dan password untuk mengakses platform ISO 30414'
+                : 'Lengkapi formulir di bawah untuk mendaftarkan akun pengguna baru'}
+            </p>
           </div>
 
           <form id="login-form" className="login-form" onSubmit={handleSubmit} noValidate>
@@ -89,73 +151,168 @@ export function LoginPage() {
               </div>
             )}
 
-            {/* Email */}
-            <div className="login-field">
-              <label htmlFor="login-email" className="login-field__label">
-                Email address
-              </label>
-              <input
-                id="login-email"
-                type="email"
-                name="email"
-                autoComplete="email"
-                required
-                aria-required="true"
-                className="login-field__input"
-                placeholder="name@organization.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                disabled={submitting}
-              />
-            </div>
+            {mode === 'login' ? (
+              <>
+                {/* Email */}
+                <div className="login-field">
+                  <label htmlFor="login-email" className="login-field__label">
+                    Alamat Email
+                  </label>
+                  <input
+                    id="login-email"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    required
+                    className="login-field__input"
+                    placeholder="name@organization.com"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
 
-            {/* Password */}
-            <div className="login-field">
-              <label htmlFor="login-password" className="login-field__label">
-                Password
-              </label>
-              <input
-                id="login-password"
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                required
-                aria-required="true"
-                className="login-field__input"
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                disabled={submitting}
-              />
-            </div>
+                {/* Password */}
+                <div className="login-field">
+                  <label htmlFor="login-password" className="login-field__label">
+                    Password
+                  </label>
+                  <input
+                    id="login-password"
+                    type="password"
+                    name="password"
+                    autoComplete="current-password"
+                    required
+                    className="login-field__input"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Full Name */}
+                <div className="login-field">
+                  <label htmlFor="reg-fullname" className="login-field__label">
+                    Nama Lengkap
+                  </label>
+                  <input
+                    id="reg-fullname"
+                    type="text"
+                    required
+                    className="login-field__input"
+                    placeholder="Contoh: Fido Wahyu Pradana"
+                    value={regFullName}
+                    onChange={e => setRegFullName(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+
+                {/* Email */}
+                <div className="login-field">
+                  <label htmlFor="reg-email" className="login-field__label">
+                    Alamat Email
+                  </label>
+                  <input
+                    id="reg-email"
+                    type="email"
+                    required
+                    className="login-field__input"
+                    placeholder="fidowahyu@pln.co.id"
+                    value={regEmail}
+                    onChange={e => setRegEmail(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+
+                {/* Role Select */}
+                <div className="login-field">
+                  <label htmlFor="reg-role" className="login-field__label">
+                    Peran / Hak Akses Sistem
+                  </label>
+                  <select
+                    id="reg-role"
+                    className="login-field__input bg-slate-900 text-white border-slate-700"
+                    value={regRole}
+                    onChange={e => setRegRole(e.target.value as typeof regRole)}
+                    disabled={submitting}
+                  >
+                    <option value="PIC">PIC / Contributor Metrik</option>
+                    <option value="REVIEWER">Reviewer / Validator Data</option>
+                    <option value="MANAGEMENT">Executive Management</option>
+                    <option value="ADMIN">System Administrator</option>
+                  </select>
+                </div>
+
+                {/* Password */}
+                <div className="login-field">
+                  <label htmlFor="reg-password" className="login-field__label">
+                    Password Baru
+                  </label>
+                  <input
+                    id="reg-password"
+                    type="password"
+                    required
+                    className="login-field__input"
+                    placeholder="Minimal 6 karakter"
+                    value={regPassword}
+                    onChange={e => setRegPassword(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+
+                {/* Confirm Password */}
+                <div className="login-field">
+                  <label htmlFor="reg-confirm" className="login-field__label">
+                    Konfirmasi Password
+                  </label>
+                  <input
+                    id="reg-confirm"
+                    type="password"
+                    required
+                    className="login-field__input"
+                    placeholder="Ulangi password baru"
+                    value={regConfirmPassword}
+                    onChange={e => setRegConfirmPassword(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Submit */}
             <button
               id="login-submit"
               type="submit"
               className="login-btn"
-              disabled={submitting || !email || !password}
+              disabled={submitting || (mode === 'login' ? (!email || !password) : (!regFullName || !regEmail || !regPassword || !regConfirmPassword))}
               aria-busy={submitting}
             >
               {submitting ? (
                 <>
                   <span className="login-btn__spinner" aria-hidden="true" />
-                  Signing in…
+                  {mode === 'login' ? 'Memproses Masuk…' : 'Mendaftarkan Akun…'}
                 </>
               ) : (
-                'Sign in'
+                mode === 'login' ? 'Masuk ke Platform' : 'Daftar Akun Baru'
               )}
             </button>
           </form>
 
           <div className="login-footer">
-            <p>Contact your administrator to reset your password or to request access.</p>
+            <p>
+              {mode === 'login'
+                ? 'Belum memiliki akun? Klik tab "Daftar Baru" di atas.'
+                : 'Sudah memiliki akun? Klik tab "Masuk Akun" di atas.'}
+            </p>
           </div>
         </div>
 
         {/* Bottom note */}
         <p className="login-note">
-          ISO 30414:2018 · Human Capital Reporting · For Internal Use Only
+          ISO 30414:2018 · Human Capital Reporting · Enterprise Advisory System
         </p>
       </main>
 
