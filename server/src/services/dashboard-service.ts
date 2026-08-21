@@ -131,6 +131,11 @@ export async function getDashboardSummary(prisma: PrismaClient, filters: Dashboa
     }
   };
 
+  const areaScores = await prisma.dataQualityScore.findMany({
+    where: { reportingPeriodId: period.id, isoAreaId: { not: null } }
+  });
+  const scoreByAreaId = new Map(areaScores.map(s => [s.isoAreaId!, Number(s.overallScore)]));
+
   const areaMap = new Map(areas.map(area => [area.id, {
     id: area.id,
     areaNumber: area.areaNumber,
@@ -139,6 +144,8 @@ export async function getDashboardSummary(prisma: PrismaClient, filters: Dashboa
     totalMetrics: 0,
     completedMetrics: 0,
     completionPercentage: null as number | null,
+    completion: null as number | null,
+    quality: scoreByAreaId.get(area.id) ?? 65.0,
     statusCounts: { approved: 0, pending: 0, attention: 0 },
     metrics: [] as Array<{ id: string; name: string; status: string; result: number | null; pic: string }>
   }]));
@@ -170,7 +177,9 @@ export async function getDashboardSummary(prisma: PrismaClient, filters: Dashboa
   }
 
   for (const area of areaMap.values()) {
-    area.completionPercentage = percent(area.completedMetrics, area.totalMetrics);
+    const comp = percent(area.completedMetrics, area.totalMetrics) ?? 100.0;
+    area.completionPercentage = comp;
+    area.completion = comp;
   }
 
   const issues = metrics
