@@ -192,11 +192,71 @@ export const AREA_DESCRIPTIONS_CATALOG = [
   { no: 12, name: 'Learning & Development', scope: 'Jam Pelatihan, Anggaran L&D, Sertifikasi SDM', desc: 'Pengukuran pengembangan SDM: rata-rata jam pelatihan per FTE per tahun, efektivitas L&D, dan sertifikasi kompetensi.' },
 ];
 
+export const AREA_ACTION_RECOMMENDATIONS: Record<string, { below: string; compliant: string }> = {
+  'Workforce Composition': {
+    below: 'Lakukan verifikasi otomatisasi data FTE & Headcount melalui sinkronisasi SAP/Core HRIS, lengkapi atribut wajib rasio pekerja tetap vs kontingen, dan perbaiki tata kelola demografi pekerja.',
+    compliant: 'Pertahankan akurasi pemetaan FTE & Headcount real-time, tingkatkan analisis prediktif rasio demografi milenial & Gen-Z, dan optimalkan efisiensi struktur pekerja.'
+  },
+  'Diversity': {
+    below: 'Tingkatkan program mentoring kepemimpinan perempuan, wujudkan kuota inklusivitas penyandang disabilitas di atas 2%, serta hilangkan kesenjangan remunerasi gender (Gender Pay Gap).',
+    compliant: 'Pertahankan persentase perempuan di jajaran manajerial (>30%), tingkatkan indeks inklusivitas ESG BUMN, dan perluas jangkauan talenta daerah operasi kritis.'
+  },
+  'Cost': {
+    below: 'Terapkan otomatisasi kalkulasi beban lembur, evaluasi rasio Cost per FTE per divisi, dan lakukan audit ketat terhadap pengeluaran biaya rekrutmen serta tunjangan.',
+    compliant: 'Pertahankan efisiensi rasio beban gaji terhadap pendapatan konsolidasi (<4%), tingkatkan analisis efisiensi kompensasi, dan kontrol pengeluaran L&D.'
+  },
+  'Productivity': {
+    below: 'Optimalisasi formula Revenue per FTE & EBIT per FTE, percepat perbaikan faktor nilai tambah modal manusia, dan tingkatkan skor Human Capital ROI (HC ROI) ke atas 3.0x.',
+    compliant: 'Pertahankan pertumbuhan HC ROI di atas 3.5x, dorong otomatisasi proses bisnis operasional, dan tingkatkan efisiensi produktivitas barel/FTE.'
+  },
+  'Health, Safety & Well-being': {
+    below: 'Audit ketat implementasi K3L lapangan, wajibkan 100% sertifikasi Fit-to-Work & fasilitas MCU berkala, dan tekan angka kecelakaan kerja (LTIFR) mendekati Zero Harm.',
+    compliant: 'Pertahankan pencapaian rekor Jam Kerja Selamat (Safe Hours), pertahankan target Zero Fatalities, dan kembangkan program kesehatan mental & well-being (EAP Score).'
+  },
+  'Leadership, Culture & Engagement': {
+    below: 'Gelar program retensi talenta kunci, lakukan evaluasi eNPS per unit bisnis, dan tingkatkan transparansi komunikasi kepemimpinan manajerial.',
+    compliant: 'Pertahankan skor eNPS di atas 85.0, perkuat budaya kerja AKHLAK BUMN, dan pertahankan tingkat retensi talenta kunci di atas 98%.'
+  },
+  'Compliance, Ethics & Workforce Relations': {
+    below: 'Wajibkan 100% kelulusan sertifikasi etika WBS & Anti-Korupsi bagi seluruh karyawan, percepat penyelesaian pengaduan ketenagakerjaan, dan mitigasi temuan audit.',
+    compliant: 'Pertahankan kepatuhan etika & WBS 100%, jaga keharmonisan Perjanjian Kerja Bersama (PKB), dan lakukan pemantauan regulasi ketenagakerjaan secara berkelanjutan.'
+  },
+  'Recruitment': {
+    below: 'Pangkas rata-rata waktu pemenuhan formasi (Time-to-Fill) di bawah 30 hari, turunkan biaya per rekrutmen (Cost per Hire), dan tingkatkan rasio kelulusan seleksi BPS/BPT.',
+    compliant: 'Pertahankan kecepatan Time-to-Fill (<28 hari), tingkatkan Employer Branding perusahaan, dan optimalkan teknologi AI Screening kandidat.'
+  },
+  'Workforce Mobility & Succession': {
+    below: 'Dorong program rotasi karir antar subholding (Cross-Subholding Mobility), tingkatkan rasio promosi internal di atas 80%, dan susun peta jalur karir transparan.',
+    compliant: 'Pertahankan pengisian posisi manajerial melalui talenta internal (>90%), optimalkan mobilitas talenta energi baru, dan evaluasi efektifitas rotasi.'
+  },
+  'Succession Planning': {
+    below: 'Susun rencana suksesi posisi kritis dengan target minimal 3 calon Ready-Now per posisi SVP/VP, dan percepat pengembangan kapabilitas calon penerus.',
+    compliant: 'Pertahankan Succession Coverage Ratio (>3.5 calon Ready-Now), persiapkan talent pool transisi energi terbarukan, dan monitoring kesiapan eksekutif.'
+  },
+  'Workforce Availability & Retention': {
+    below: 'Kendalikan tingkat turnover sukarela (Voluntary Turnover) di bawah 3.0%, tekan angka ketidakhadiran operasional (Absenteeism Rate), dan audit faktor penyebab kelelahan pekerja.',
+    compliant: 'Pertahankan Voluntary Turnover Rate di tingkat sangat rendah (<2.0%), jaga retensi pekerja baru tahun pertama (>98%), dan optimalkan presensi harian.'
+  },
+  'Learning & Development': {
+    below: 'Tingkatkan rata-rata jam pelatihan per pekerja di atas 50 jam/tahun, alokasikan anggaran L&D terarah, dan wajibkan 100% sertifikasi kompetensi K3L & Migas.',
+    compliant: 'Pertahankan rata-rata jam pelatihan (>70 jam/tahun), tingkatkan skor efektivitas pelatihan (Kirkpatrick Score >90), dan perkuat akademi kepemimpinan Pusdiklat.'
+  }
+};
+
+function getActionRecommendation(areaName: string, isBelow: boolean): string {
+  const matchKey = Object.keys(AREA_ACTION_RECOMMENDATIONS).find(k => k.toLowerCase().includes(areaName.toLowerCase()) || areaName.toLowerCase().includes(k.toLowerCase()));
+  if (matchKey && AREA_ACTION_RECOMMENDATIONS[matchKey]) {
+    return isBelow ? AREA_ACTION_RECOMMENDATIONS[matchKey].below : AREA_ACTION_RECOMMENDATIONS[matchKey].compliant;
+  }
+  return isBelow
+    ? `Lengkapi metrik tersisa di area ${areaName}, validasi akurasi formula data, dan perbaiki tata kelola pengarsipan.`
+    : `Pertahankan efektivitas tata kelola data di area ${areaName} dan tingkatkan otomatisasi integrasi HRIS.`;
+}
+
 function drawPdfSpiderChart(doc: PDFKit.PDFDocument, areas: Array<{ name: string; quality: number | null; completion: number | null }>, cx: number, cy: number, maxRadius: number) {
   const numAxes = Math.min(12, areas.length || 12);
   const levels = [1, 2, 3, 4, 5];
   
-  // Concentric Polygons & Level Grid
   levels.forEach(lvl => {
     const r = (lvl / 5.0) * maxRadius;
     const points: Array<[number, number]> = [];
@@ -213,7 +273,6 @@ function drawPdfSpiderChart(doc: PDFKit.PDFDocument, areas: Array<{ name: string
     doc.fillColor('#64748B').fontSize(7).text(`L${lvl}`, cx + 2, cy - r - 3);
   });
 
-  // Spokes & Axis Labels
   for (let i = 0; i < numAxes; i++) {
     const angle = -Math.PI / 2 + (i * 2 * Math.PI) / numAxes;
     const endX = cx + maxRadius * Math.cos(angle);
@@ -227,7 +286,6 @@ function drawPdfSpiderChart(doc: PDFKit.PDFDocument, areas: Array<{ name: string
     doc.fillColor('#0F172A').fontSize(7.5).text(shortName, labelX, labelY, { width: 44, align: 'center' });
   }
 
-  // Plot Target Minimal Polygon (Level 3.0)
   const targetPoints: Array<[number, number]> = [];
   for (let i = 0; i < numAxes; i++) {
     const angle = -Math.PI / 2 + (i * 2 * Math.PI) / numAxes;
@@ -236,7 +294,6 @@ function drawPdfSpiderChart(doc: PDFKit.PDFDocument, areas: Array<{ name: string
   }
   doc.polygon(...targetPoints).strokeColor('#047857').lineWidth(1.2).dash(4, { space: 2 }).stroke().undash();
 
-  // Plot Actual Score Polygon
   const actualPoints: Array<[number, number]> = [];
   for (let i = 0; i < numAxes; i++) {
     const angle = -Math.PI / 2 + (i * 2 * Math.PI) / numAxes;
@@ -255,14 +312,12 @@ function addExecutiveHeaderFooter(doc: PDFKit.PDFDocument) {
     const pageNum = i + 1;
     const totalPages = range.count;
 
-    // Running Header Bar (Page 2+)
     if (pageNum > 1) {
       doc.rect(45, 20, 505, 20).fill('#0F172A');
       doc.fillColor('#FFFFFF').fontSize(7.5).text('ISO 30414 EXECUTIVE ADVISORY AUDIT REPORT', 55, 26);
       doc.fillColor('#94A3B8').fontSize(7.5).text(`CONFIDENTIAL & PROPRIETARY`, 430, 26, { width: 110, align: 'right' });
     }
 
-    // Running Footer Line (All Pages)
     doc.moveTo(45, 802).lineTo(550, 802).strokeColor('#CBD5E1').lineWidth(0.8).stroke();
     doc.fillColor('#64748B').fontSize(7.5).text('ISO 30414 CONSULTING & HUMAN CAPITAL ADVISORY SERVICES', 45, 808);
     doc.fillColor('#64748B').fontSize(7.5).text(`Halaman ${pageNum} dari ${totalPages}`, 450, 808, { width: 100, align: 'right' });
@@ -283,7 +338,6 @@ function addPdfContent(document: PDFKit.PDFDocument, snapshot: ReportSnapshot) {
 
   const belowTargetAreasCount = snapshot.areas.filter(a => ((a.quality ?? a.completion ?? 50) / 100 * 4 + 1) < 3.0).length;
 
-  // ─── PAGE 1: EXECUTIVE COVER PAGE ───────────────────────────────────────
   document.rect(45, 45, 505, 75).fill('#0F172A');
   document.fillColor('#3B82F6').fontSize(10).text('IT & HUMAN CAPITAL CONSULTING ADVISORY', 65, 60, { characterSpacing: 1 });
   document.fillColor('#FFFFFF').fontSize(18).text('LAPORAN HASIL PENILAIAN AUDIT ISO 30414', 65, 75);
@@ -332,7 +386,6 @@ function addPdfContent(document: PDFKit.PDFDocument, snapshot: ReportSnapshot) {
   document.text(`• Status Dokumen          : FINAL APPROVED AUDIT REPORT`, 300, 396);
   document.text(`• Klasifikasi Keamanan    : CONFIDENTIAL ADVISORY`, 300, 410);
 
-  // ─── PAGE 2: SECTION 1 — STANDAR SKALA KEMATANGAN (LEVEL 1-5) ───────────
   document.addPage();
   document.rect(45, 45, 505, 24).fill('#0F172A');
   document.fillColor('#FFFFFF').fontSize(11).text('1. STANDAR SKALA KEMATANGAN TATA KELOLA (MATURITY SCALE 1 - 5)', 55, 52);
@@ -356,7 +409,6 @@ function addPdfContent(document: PDFKit.PDFDocument, snapshot: ReportSnapshot) {
     lvlY += 61;
   });
 
-  // ─── PAGE 3: SECTION 2 — RINGKASAN TEMUAN AUDIT UTAMA & GAP DATA ────────
   document.addPage();
   document.rect(45, 45, 505, 24).fill('#0F172A');
   document.fillColor('#FFFFFF').fontSize(11).text('2. RINGKASAN TEMUAN AUDIT UTAMA & IDENTIFIKASI GAP DATA', 55, 52);
@@ -380,7 +432,6 @@ function addPdfContent(document: PDFKit.PDFDocument, snapshot: ReportSnapshot) {
     findY += 74;
   });
 
-  // ─── PAGE 4: SECTION 3 — KATALOG PENJELASAN AREA ISO 30414 ───────────
   document.addPage();
   document.rect(45, 45, 505, 24).fill('#0F172A');
   document.fillColor('#FFFFFF').fontSize(11).text(`3. KATALOG PENJELASAN KESELURUHAN ${snapshot.areas.length} AREA STANDAR ISO 30414`, 55, 52);
@@ -400,22 +451,18 @@ function addPdfContent(document: PDFKit.PDFDocument, snapshot: ReportSnapshot) {
     catY += 53;
   });
 
-  // ─── PAGE 5: SECTION 4 — VISUALISASI SPIDER CHART PER AREA ───────────────
   document.addPage();
   document.rect(45, 45, 505, 24).fill('#0F172A');
   document.fillColor('#FFFFFF').fontSize(11).text('4. SPIDER / RADAR CHART & ANALISIS SKOR PENILAIAN PER AREA', 55, 52);
 
   document.fillColor('#475569').fontSize(8.5).text(`Visualisasi grafik radar ${snapshot.areas.length} aksis membandingkan Nilai Kematangan Aktual (Area Biru) vs Target Minimal (Garis Hijau Level 3.0):`, 45, 78);
 
-  // Draw Vector Spider Chart Graphic
   drawPdfSpiderChart(document, snapshot.areas, 297, 290, 120);
 
-  // Spider Chart Legend Box
   document.rect(130, 450, 335, 38).fillAndStroke('#F8FAFC', '#CBD5E1');
   document.fillColor('#1D4ED8').fontSize(8).text('■ Area Biru Transparan : Hasil Penilaian Kematangan Aktual per Area', 145, 458);
   document.fillColor('#047857').fontSize(8).text('- - Garis Hijau Putus   : Batas Minimum Standarisasi ISO 30414 (Level 3.0 / 65%)', 145, 472);
 
-  // ─── PAGE 6+: SECTION 5 — TEMUAN AUDIT & REKOMENDASI (DYNAMIC 4 AREAS PER PAGE) ──
   const chunkSize = 4;
   const areaChunks = [];
   for (let i = 0; i < snapshot.areas.length; i += chunkSize) {
@@ -442,6 +489,7 @@ function addPdfContent(document: PDFKit.PDFDocument, snapshot: ReportSnapshot) {
       const isBelow = areaLevel < 3.0;
       const approved = area.approvedMetrics ?? 0;
       const total = area.totalMetrics ?? 0;
+      const actionRec = getActionRecommendation(area.name, isBelow);
 
       document.rect(45, areaCardY, 505, 118).fillAndStroke(isBelow ? '#FFFBEB' : '#F0FDF4', isBelow ? '#D97706' : '#059669');
 
@@ -452,7 +500,7 @@ function addPdfContent(document: PDFKit.PDFDocument, snapshot: ReportSnapshot) {
 
       document.fillColor('#334155').fontSize(7.5).text(`• Kesimpulan Audit : ${isBelow ? `Level ${areaLevel} (${areaScore.toFixed(1)}%) berada di bawah ambang batas minimal. Baru ${approved} dari ${total} metrik terisi.` : `Level ${areaLevel} (${areaScore.toFixed(1)}%) telah memenuhi standar kelayakan audit ISO 30414 (${approved}/${total} metrik terisi).`}`, 55, areaCardY + 46, { width: 485, lineGap: 1 });
 
-      document.fillColor('#047857').fontSize(7.5).text(`• Rekomendasi Aksi  : ${isBelow ? `Lengkapi ${Math.max(0, total - approved)} metrik tersisa, validasi akurasi formula, dan perbaiki kelengkapan data.` : `Pertahankan efektivitas tata kelola data dan tingkatkan otomatisasi integrasi data.`}`, 55, areaCardY + 68, { width: 485, lineGap: 1 });
+      document.fillColor('#047857').fontSize(7.5).text(`• Rekomendasi Aksi  : ${actionRec}`, 55, areaCardY + 68, { width: 485, lineGap: 1 });
 
       document.fillColor('#6B21A8').fontSize(7.5).text(`• Dampak & Linimasa : ${isBelow ? 'Menaikkan skor kematangan ke ambang batas kelayakan audit (Level 3.0)' : 'Menjaga kepatuhan audit berkelanjutan'} (${isBelow ? 'Bulan 1 - 3' : 'Rutin'})`, 55, areaCardY + 96);
 
@@ -460,7 +508,6 @@ function addPdfContent(document: PDFKit.PDFDocument, snapshot: ReportSnapshot) {
     });
   });
 
-  // ─── PAGE 9+: SECTION 6 — DETAIL AUDIT METRIK TERAKREDITASI ───────────────
   document.addPage();
   document.rect(45, 45, 505, 24).fill('#0F172A');
   document.fillColor('#FFFFFF').fontSize(11).text('6. DETAIL METRIK TERAKREDITASI & AUDIT TRAIL', 55, 52);
@@ -626,7 +673,7 @@ export async function generateExcel(snapshot: ReportSnapshot) {
       lvl >= 3.0 ? 'MEMENUHI TARGET' : 'DI BAWAH BATAS MINIMAL',
       isBelow ? `Ditemukan ketidaklengkapan data pada ${area.totalMetrics - area.approvedMetrics} metrik (Level ${lvl}).` : `Area telah memenuhi keterisian metrik (Level ${lvl}).`,
       isBelow ? `Tingkat kematangan Level ${lvl} (${areaPct.toFixed(1)}%) di bawah batas minimum ISO.` : `Tingkat kematangan Level ${lvl} (${areaPct.toFixed(1)}%) memenuhi standar ISO.`,
-      isBelow ? `Lengkapi ${area.totalMetrics - area.approvedMetrics} metrik tersisa dan tingkatkan akurasi data.` : `Pertahankan efektivitas tata kelola data.`
+      getActionRecommendation(area.name, isBelow)
     ]);
   });
 
